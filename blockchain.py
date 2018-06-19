@@ -122,6 +122,10 @@ class Blockchain:
         transaction = Transaction(sender, recipient, amount)
         #transaction = OrderedDict([('sender', sender), ('recipient', recipient), ('amount', amount)])
         #sender_balance = self.get_balance(sender)
+
+        if self.hosting_node == None:
+            return False
+
         if Verification.verify_transaction(transaction, self.get_balance):
             self.__open_transactions.append(transaction)
             #participants.add(sender)
@@ -131,6 +135,10 @@ class Blockchain:
         return False
 
     def mine_block(self, node):
+
+        if self.hosting_node == None:
+            return False
+
         last_block = self.__chain[-1]
         hashed_block = hash_util.hash_block(last_block)
         #hashed_block = hash_util.hash_block(dict_block)

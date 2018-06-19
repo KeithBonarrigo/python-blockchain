@@ -2,12 +2,15 @@ from uuid import uuid4
 from blockchain import Blockchain
 from utility.verification import Verification
 from block import Block
+from wallet import Wallet
 
 class Node:
     def __init__(self):
         #self.id = str(uuid4())
-        self.id = 'Max'
-        self.blockchain = Blockchain(self.id)
+        #self.id = 'Max'
+        self.wallet = Wallet()
+        self.wallet.create_keys()
+        self.blockchain = Blockchain(self.wallet.public_key)
 
     def get_transaction_value(self):
         """ Returns the input of the user (a new transaction amount) as a float. """
@@ -40,6 +43,8 @@ class Node:
             print('2: Mine a new block')
             print('3: Output the blockchain blocks')
             print('4: Check transaction validity')
+            print('5: Create wallet')
+            print('6: Load wallet')
             print('h: Manipulate the chain')
             print('q: Quit')
             user_choice = self.get_user_choice()
@@ -47,13 +52,14 @@ class Node:
                 tx_data = self.get_transaction_value()
                 recipient, amount = tx_data
                 # Add the transaction amount to the blockchain
-                if self.blockchain.add_transaction(recipient, self.id, amount=amount):
+                if self.blockchain.add_transaction(recipient, self.wallet.public_key, amount=amount):
                     print('transaction added')
                 else:
                     print('tranaction failed')
                 print(self.blockchain.get_open_transactions())
             elif user_choice == '2':
-                self.blockchain.mine_block(self.id)
+                if not self.blockchain.mine_block(self.wallet.public_key):
+                    print("mining failed!")
             elif user_choice == '3':
                 self.print_blockchain_elements()
             elif user_choice == '4':
@@ -61,6 +67,11 @@ class Node:
                     print("All transactions are valid")
                 else:
                     print("Invalid transactions present in open transactions")
+            elif user_choice == '5':
+                self.wallet.create_keys()
+                self.blockchain = Blockchain(self.wallet.public_key)
+            elif user_choice == '6':
+                pass
             elif user_choice == 'h':
                 # Make sure that you don't try to "hack" the blockchain if it's empty
                 if len(self.blockchain) >= 1:
@@ -80,7 +91,7 @@ class Node:
                 print('Invalid blockchain!')
                 # Break out of the loop
                 break
-            print('Balance of {}: {:6.2f} '.format(self.id, self.blockchain.get_balance('Max')))
+            print('Balance of {}: {:6.2f} '.format(self.wallet.public_key, self.blockchain.get_balance(self.wallet.public_key)))
 
         else:
             print('User left!')
