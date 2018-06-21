@@ -55,7 +55,7 @@ class Blockchain:
                     #     'transactions': [OrderedDict([('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
                     # }
                     #converted_tx = [OrderedDict([('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
-                    converted_tx = [Transaction(tx['sender'], tx['recipient'], tx['amount']) for tx in block['transactions']]
+                    converted_tx = [Transaction(tx['sender'], tx['recipient'], tx['signature'], tx['amount']) for tx in block['transactions']]
                     updated_block = Block(block['index'], block['previous_hash'], converted_tx , block['proof'], block['timestamp'])
                     updated_blockchain.append(updated_block)
                 self.chain = updated_blockchain
@@ -63,7 +63,7 @@ class Blockchain:
                 updated_open_transactions = []
                 for tx in open_transactions:
                     #updated_transaction = OrderedDict([('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
-                    updated_transaction = Transaction(tx['sender'], tx['recipient'], tx['amount'])
+                    updated_transaction = Transaction(tx['sender'], tx['recipient'], tx['signature'], tx['amount'])
                     updated_open_transactions.append(updated_transaction)
                 self.__open_transactions = updated_open_transactions
         except (IOError, IndexError):
@@ -111,7 +111,7 @@ class Blockchain:
         # The optional one is optional because it has a default value => [1]
 
 
-    def add_transaction(self, recipient, sender, amount=1.0):
+    def add_transaction(self, recipient, sender, signature, amount=1.0):
         """ Append a new value as well as the last blockchain value to the blockchain.
 
         Arguments:
@@ -119,12 +119,13 @@ class Blockchain:
             :recipient: The recipient of the coins.
             :amount: The amount of coins sent with the transaction (default = 1.0)
         """
-        transaction = Transaction(sender, recipient, amount)
+        #transaction = Transaction(sender, recipient, signature, amount)
         #transaction = OrderedDict([('sender', sender), ('recipient', recipient), ('amount', amount)])
         #sender_balance = self.get_balance(sender)
 
         if self.hosting_node == None:
             return False
+        transaction = Transaction(sender, recipient, signature, amount)
 
         if Verification.verify_transaction(transaction, self.get_balance):
             self.__open_transactions.append(transaction)
@@ -151,7 +152,7 @@ class Blockchain:
         print("my id is:")
         print(self.hosting_node)
         #reward_transaction = OrderedDict([('sender', 'MINING'), ('recipient', owner), ('amount', MINING_REWARD)])
-        reward_transaction = Transaction('MINING', node, MINING_REWARD)
+        reward_transaction = Transaction('MINING', node, '', MINING_REWARD)
 
         copied_transactions = self.__open_transactions[:]
         copied_transactions.append(reward_transaction)
