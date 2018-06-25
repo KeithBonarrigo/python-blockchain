@@ -1,4 +1,5 @@
 from utility import hash_util
+from wallet import Wallet
 
 class Verification:
 
@@ -27,18 +28,21 @@ class Verification:
         return guess_hash[0:2] == "00"
 
     @staticmethod
-    def verify_transaction(transaction, get_balance):
+    def verify_transaction(transaction, get_balance, checkFunds=True):
         # sender_balance = get_balance(transaction['sender'])
         sender_balance = get_balance(transaction.sender)
         print("sender balance is " + str(sender_balance))
         # return sender_balance >= transaction['amount']
-        return sender_balance >= transaction.amount
+        if checkFunds:
+            return sender_balance >= transaction.amount and Wallet.verify_transaction(transaction)
+        else:
+            return Wallet.verify_transaction(transaction)
 
     @classmethod
     def verify_transactions(cls, open_transactions, get_balance):
         is_valid = True
         for tx in open_transactions:
-            if cls.verify_transaction(tx, get_balance):
+            if cls.verify_transaction(tx, get_balance, False):
                 return True
             else:
                 return False
