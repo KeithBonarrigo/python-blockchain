@@ -141,7 +141,53 @@ def get_balance():
         }
         return jsonify(response), 500
 
+@app.route('/nodes', methods=['GET'])
+def get_nodes():
+    nodes = blockchain.get_peer_nodes()
+    response = {
+        "all_nodes":nodes
+    }
+    return jsonify(response), 200
 
+@app.route('/node', methods=['POST'])
+def add_node():
+    values = request.get_json()
+
+    if not values:
+        response = {
+            'message': 'No data available'
+        }
+        return jsonify(response), 400
+    if 'node' not in values:
+        response = {
+            'message': 'No node data available'
+        }
+        return jsonify(response), 400
+    else:
+        node = values['node']
+        blockchain.add_peer_node(node)
+        response = {
+            'message':'Node added successfully',
+            'all_nodes':blockchain.get_peer_nodes()
+        }
+        return jsonify(response), 200
+
+
+@app.route('/node/<node_url>/', methods=['DELETE'])
+def remove_node(node_url):
+    #values = request.get_json()
+    if node_url == '' or node_url == None:
+        response = {
+            'message': 'No data available'
+        }
+        return jsonify(response), 400
+    else:
+        blockchain.remove_peer_node(node_url)
+        response = {
+            'message': 'Node ' + node_url + 'deleted successfully',
+            'all_nodes': blockchain.get_peer_nodes()
+        }
+        return jsonify(response), 200
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)

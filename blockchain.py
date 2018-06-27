@@ -18,8 +18,9 @@ class Blockchain:
         genesis_block = Block(0, '', [], 100, 0)
         self.chain = [genesis_block]
         self.__open_transactions = []
-        self.load_data()
         self.hosting_node = hosting_node_id
+        self.__peer_nodes = set()
+        self.load_data()
         #self.owner = owner
         #blockchain = []
         #open_transactions = []
@@ -42,6 +43,12 @@ class Blockchain:
     def load_data(self):
         #global blockchain
         #global open_transactions
+        """
+        Loads blockchain - currently from text file
+            :blockchain - object
+            :open_transactions - object
+            :peer_nodes - list
+        """
 
         try:
             with open('blockchain.txt', mode='r') as f:
@@ -60,29 +67,32 @@ class Blockchain:
                     updated_block = Block(block['index'], block['previous_hash'], converted_tx , block['proof'], block['timestamp'])
                     updated_blockchain.append(updated_block)
                 self.chain = updated_blockchain
-                open_transactions = json.loads(file_content[1])
+                open_transactions = json.loads(file_content[1][:-1])
                 updated_open_transactions = []
                 for tx in open_transactions:
                     #updated_transaction = OrderedDict([('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
                     updated_transaction = Transaction(tx['sender'], tx['recipient'], tx['signature'], tx['amount'])
                     updated_open_transactions.append(updated_transaction)
                 self.__open_transactions = updated_open_transactions
+                peer_nodes = json.loads(file_content[2])
+                self.__peer_nodes = set(peer_nodes)
+
         except (IOError, IndexError):
             print("Handled exception")
         finally:
             print("Clean up")
 
     def save_data(self):
+        """saves blockchain data to text file - accepts no args"""
         try:
             with open('blockchain.txt', mode='w') as f:
-                #saveable_chain = [block.__dict__ for block in blockchain]
                 saveable_chain = [block.__dict__ for block in [Block(block_el.index, block_el.previous_hash, [tx.__dict__ for tx in block_el.transactions], block_el.proof, block_el.timestamp) for block_el in self.__chain]]
                 f.write(json.dumps(saveable_chain))
-                #f.write(json.dumps(blockchain))
                 f.write('\n')
                 saveable_open_transactions = [tx.__dict__ for tx in self.__open_transactions]
-                #f.write(json.dumps(open_transactions))
                 f.write(json.dumps(saveable_open_transactions))
+                f.write('\n')
+                f.write(json.dumps(list(self.__peer_nodes)))
         except:
             print('File saving failed')
 
@@ -193,6 +203,28 @@ class Blockchain:
         print(mode + " " + str(participant) + ' balance of ' + str(return_value))
         return return_value
 
+
+    def add_peer_node(self, node):
+        """
+        Adds a new node to the peer node network
+        Arguments :
+            :node: the node url that should be added
+        """
+        self.__peer_nodes.add(node)
+        self.save_data()
+
+    def remove_peer_node(self, node):
+        """
+        Removed node from the peer node network
+        Arguments :
+            :node: the node url that should be removed
+        """
+        self.__peer_nodes.discard(node)
+        self.save_data()
+
+    def get_peer_nodes(self):
+        """returns a list of all peer nodes"""
+        return list(self.__peer_nodes)
 
 
 
