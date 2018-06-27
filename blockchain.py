@@ -94,8 +94,10 @@ class Blockchain:
             proof += 1
         return proof
 
-    def get_balance(self, participant):
-        #participant = self.hosting_node
+    def get_balance(self):
+        if self.hosting_node == None:
+            return None
+        participant = self.hosting_node
         amount_sent = self.calculate_balance('sender', participant)
         amount_received = self.calculate_balance('recipient', participant)
         balance = amount_received - amount_sent
