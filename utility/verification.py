@@ -30,13 +30,28 @@ class Verification:
     @staticmethod
     def verify_transaction(transaction, get_balance, checkFunds=True):
         # sender_balance = get_balance(transaction['sender'])
-        sender_balance = get_balance()
+        #sender_balance = get_balance(transaction.sender)
         #print("sender balance is " + str(sender_balance))
         # return sender_balance >= transaction['amount']
         if checkFunds:
+            sender_balance = get_balance(transaction.sender)
             return sender_balance >= transaction.amount and Wallet.verify_transaction(transaction)
         else:
             return Wallet.verify_transaction(transaction)
+
+    @staticmethod
+    def verify_broadcast_transaction(transaction, get_balance, checkFunds=True):
+        # sender_balance = get_balance(transaction['sender'])
+        # sender_balance = get_balance(transaction.sender)
+        # print("sender balance is " + str(sender_balance))
+        # return sender_balance >= transaction['amount']
+
+        # if checkFunds:
+        #     sender_balance = get_balance(transaction.sender)
+        #     return sender_balance >= transaction.amount and Wallet.verify_transaction(transaction)
+        # else:
+        #     return Wallet.verify_transaction(transaction)
+        return True
 
     @classmethod
     def verify_transactions(cls, open_transactions, get_balance):

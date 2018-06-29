@@ -4,20 +4,22 @@ from wallet import Wallet
 from blockchain import Blockchain
 
 app = Flask(__name__)
-wallet = Wallet()
-blockchain = Blockchain(wallet.public_key)
 CORS(app)
 
 @app.route('/', methods=['GET'])
-def get_ui():
+def get_node_ui():
     return send_from_directory('ui', 'node.html')
+
+@app.route('/network', methods=['GET'])
+def get_network_ui():
+    return send_from_directory('ui', 'network.html')
 
 @app.route('/wallet', methods=['POST'])
 def create_keys():
     wallet.create_keys()
     if wallet.save_keys():
         global blockchain
-        blockchain = Blockchain(wallet.public_key)
+        blockchain = Blockchain(wallet.public_key, port)
         response = {
             'public_key':wallet.public_key,
             'private_key':wallet.private_key,
@@ -35,7 +37,7 @@ def create_keys():
 def load_keys():
     if wallet.load_keys():
         global blockchain
-        blockchain = Blockchain(wallet.public_key)
+        blockchain = Blockchain(wallet.public_key, port)
         response = {
             'public_key': wallet.public_key,
             'private_key': wallet.private_key,
@@ -47,6 +49,67 @@ def load_keys():
             'message': 'Loading keys failed'
         }
         return jsonify(response), 500
+
+@app.route('/broadcast-block', methods=['POST'])
+def broadcast_block():
+    values = request.get_json()
+    if not values:
+        response = {"message": "No data found" }
+        return jsonify(response), 400
+    if 'block' not in values:
+        response = {"message": "Missing required transaction data" }
+        return jsonify(response), 400
+    block = values['block']
+    if block['index'] == blockchain.chain[-1].index + 1: #this is the next block in the chain as indicated by the index - go ahead and add it
+        if blockchain.add_block(block):
+            response = {'message': 'block added' }
+            return jsonify(response), 201
+        else:
+            response = {'message': 'block seems invalid'}
+            return jsonify(response), 500
+    elif block['index'] > blockchain.chain[-1].index:
+        pass
+    else:
+        response = {'message':'blockchain seems to be shorter - block not added' }
+        return jsonify(response), 409
+
+
+
+@app.route('/broadcast-transaction', methods=['POST'])
+def broadcast_transaction():
+    values = request.get_json()
+
+    if not values:
+        response = {
+            "message": "No data found"
+        }
+        return jsonify(response), 401
+    required = ['sender', 'recipient', 'amount', 'signature']
+    if not all(key in values for key in required):
+        response = {
+            "message": "Missing required transaction data"
+        }
+        return jsonify(response), 402
+    success = blockchain.add_broadcast_transaction(values['recipient'], values['sender'], values['signature'], values['amount'], is_receiving=True)
+    print("success is:")
+    print(success)
+    if success:
+        response = {
+            'message': 'added transaction',
+            'transaction': {
+                'sender': values['sender'],
+                'recipient': values['recipient'],
+                'amount': values['amount'],
+                'signature': values['signature']
+            }
+        }
+        return jsonify(response), 201
+    else:
+        response = {
+            'message': 'unable to add transaction!'
+        }
+        return jsonify(response), 500
+
 
 @app.route('/transaction', methods=['POST'])
 def add_transaction():
@@ -190,4 +253,11 @@ def remove_node(node_url):
         return jsonify(response), 200
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000)
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument('-p', '--port', type=int, default=5000)
+    args = parser.parse_args()
+    port = args.port
+    wallet = Wallet(port)
+    blockchain = Blockchain(wallet.public_key, port)
+    app.run(host='127.0.0.1', port=port)
