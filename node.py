@@ -66,11 +66,13 @@ def broadcast_block():
             return jsonify(response), 201
         else:
             response = {'message': 'block seems invalid'}
-            return jsonify(response), 500
+            return jsonify(response), 409
     elif block['index'] > blockchain.chain[-1].index:
-        pass
+        response = {'message': 'blockchain differs from local blockchain'}
+        blockchain.resolve_conflicts = True
+        return jsonify(response), 200
     else:
-        response = {'message':'blockchain seems to be shorter - block not added' }
+        response = {'message':'blockchain seems to be shorter than local blockchain - block not added' }
         return jsonify(response), 409
 
 
@@ -83,13 +85,13 @@ def broadcast_transaction():
         response = {
             "message": "No data found"
         }
-        return jsonify(response), 401
+        return jsonify(response), 400
     required = ['sender', 'recipient', 'amount', 'signature']
     if not all(key in values for key in required):
         response = {
             "message": "Missing required transaction data"
         }
-        return jsonify(response), 402
+        return jsonify(response), 400
     success = blockchain.add_broadcast_transaction(values['recipient'], values['sender'], values['signature'], values['amount'], is_receiving=True)
     print("success is:")
     print(success)
@@ -157,6 +159,9 @@ def add_transaction():
 
 @app.route('/mine', methods=['POST'])
 def mine():
+    if blockchain.resolve_conflicts:
+        response = {'message':'Resolve conflicts first - block not added'}
+        return jsonify(response), 409
     block = blockchain.mine_block()
     if block != None:
         dict_block = block.__dict__.copy()
@@ -173,6 +178,19 @@ def mine():
             'wallet_set_up': wallet.public_key != None
         }
         return jsonify(response), 500
+
+@app.route('/resolve-confilcts', methods=['POST'])
+def resolve_conflicts():
+    replaced = blockchain.resolve()
+    if replaced:
+        response = {
+            'message': 'Chain was replaced'
+        }
+    else:
+        response = {
+            'message': 'Local chain kept'
+        }
+    return jsonify(response), 200
 
 @app.route('/transactions', methods=['GET'])
 def get_open_transactions():
